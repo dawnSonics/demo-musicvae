@@ -1,5 +1,6 @@
 canvas = document.getElementById('canvas')
 button = document.getElementById('gen-button')
+select = document.getElementById('gen-select')
 
 function changeButtonText(val) {
     button.value = val
@@ -8,7 +9,7 @@ function changeButtonText(val) {
 
 const vae_temperature = 0.5
 const controlArgs = {
-    key: 60
+    chordProgression: ["Dm", "F", "Am", "G"]
 }
 const vizConfig = {
     noteHeight: 6,
@@ -20,8 +21,14 @@ const vizConfig = {
 // music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_2bar_small');
 // music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_4bar_small_q2');
 // music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_4bar_med_q2');
-music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_4bar_med_lokl_q2');
-music_vae.initialize().then(() => changeButtonText("generate"));
+// music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_chords');
+// music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_16bar_small_q2');
+
+melody_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_4bar_med_lokl_q2');
+drum_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/drums_2bar_lokl_small');
+
+melody_vae.initialize().then(() => changeButtonText("generate"));
+music_vae = melody_vae
 
 Tone.start()
 
@@ -50,7 +57,21 @@ function genVAE() {
   .sample(1, vae_temperature)
 //   .sample(1, vae_temperature, controlArgs)
   .then((sample) => processSample(sample[0]));
-//   .then((sample) => player.start(sample[0]));
 }
 
 button.onclick = genVAE
+select.onchange = function () {
+    if (this.value == 'percussion') {
+        if (!drum_vae.initialized) {
+            changeButtonText("loading")
+            drum_vae.initialize().then(() => changeButtonText("generate"));
+        }
+        music_vae = drum_vae
+    } else if (this.value == 'melody') {
+        if (!melody_vae.initialized) {
+            changeButtonText("loading")
+            melody_vae.initialize().then(() => changeButtonText("generate"));
+        }
+        music_vae = melody_vae
+    }
+};
