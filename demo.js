@@ -1,32 +1,56 @@
-var vae_temperature = 0.0
+canvas = document.getElementById('canvas')
+button = document.getElementById('gen-button')
 
-music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_4bar_small_q2');
-music_vae.initialize();
+function changeButtonText(val) {
+    button.value = val
+    button.innerHTML = val
+}
+
+const vae_temperature = 0.0
+const controlArgs = {
+    key: 60
+}
+const vizConfig = {
+    noteHeight: 6,
+    pixelsPerTimeStep: 60,
+    noteSpacing: 1,
+    noteRGB: '255, 255, 255'
+}
+
+music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_2bar_small');
+// music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_4bar_small_q2', VAEspec);
+// music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_4bar_med_q2', VAEspec);
+// music_vae = new mm.MusicVAE('https://storage.googleapis.com/magentadata/js/checkpoints/music_vae/mel_4bar_med_lokl_q2');
+music_vae.initialize().then(() => changeButtonText("generate"));
 
 Tone.start()
 
-canvas = document.getElementById('canvas')
-
 viz = null
+player = new mm.Player(false)
 
-player = new mm.Player()
-
-function processSample(sample) {
-    player.start(sample[0])
-
-    delete viz
-    viz = new mm.Visualizer(sample[0], canvas, {noteRGB: '255, 255, 255'});
+function loopSample(sample) {
+    player.start(sample).then(() => loopSample(sample))
 }
 
-function playVAE() {
+function processSample(sample) {
+    loopSample(sample)
+
+    delete viz
+    viz = new mm.Visualizer(sample, canvas, vizConfig);
+}
+
+function genVAE() {
   if (player.isPlaying()) {
     player.stop();
+    changeButtonText("generate")
     return;
   }
+  changeButtonText("stop")
   music_vae
   .sample(1, vae_temperature)
-  .then((sample) => processSample(sample));
+//   .sample(1, vae_temperature, controlArgs)
+  .then((sample) => processSample(sample[0]));
 //   .then((sample) => player.start(sample[0]));
 }
 
-document.getElementById('gen-button').onclick = playVAE
+button.onclick = genVAE
